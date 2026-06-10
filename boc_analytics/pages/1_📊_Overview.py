@@ -54,6 +54,7 @@ user = dfs.get("user",            pd.DataFrame())
 fc   = dfs.get("fraud_check",     pd.DataFrame())
 nft  = dfs.get("nft",             pd.DataFrame())
 rc   = dfs.get("reward_credit",   pd.DataFrame())
+rcl  = dfs.get("reward_claim",    pd.DataFrame())
 
 # ── Derived KPI values (all from real data) ────────────────────────────────────
 total_users     = len(user)
@@ -108,7 +109,6 @@ st.markdown("<br>", unsafe_allow_html=True)
 # Second row of KPIs — spend metrics
 k2_data = [
     ("💰", f"${total_spend_num:,.0f}", "Total Spend (USD)"),
-    ("📊", f"${avg_spend_num:,.1f}",  "Avg Bill Amount (USD)"),
     ("🏷️", top_category.title(),     "Top Spend Category"),
     ("🛡️", f"{fraud_pass_rate:.1f}%","Fraud Pass Rate"),
 ]
@@ -505,6 +505,101 @@ if fraud_total > 0:
             )
             st.plotly_chart(fig, width='stretch')
 
+# ── Reward Points Section ──────────────────────────────────────────────────
+st.markdown("<br>", unsafe_allow_html=True)
+st.info("🏆 **Reward Points Overview** — Track how reward points are earned and claimed across the platform. Credits are earned per bill upload, and users can claim accumulated points for withdrawal.")
+
+if not rc.empty:
+    total_credits = len(rc)
+    total_points_earned = int(rc["amount"].sum())
+    unique_earners = rc["userId"].nunique()
+    avg_points_per_user = total_points_earned / unique_earners if unique_earners > 0 else 0
+
+    total_claims = len(rcl) if not rcl.empty else 0
+    total_claimed = int(rcl["amount"].sum()) if not rcl.empty else 0
+    claims_transferred = int((rcl["status"] == "transferred").sum()) if not rcl.empty and "status" in rcl.columns else 0
+    claims_pending = int((rcl["status"] == "pending").sum()) if not rcl.empty and "status" in rcl.columns else 0
+    unique_claimers = rcl["userId"].nunique() if not rcl.empty else 0
+
+
+    # Charts row: Points earned over time + Claim status donut
+    rw1, rw2 = st.columns(2)
+
+    with rw1:
+        rc_ts = rc.dropna(subset=["createdAt"]).copy()
+        rc_ts["month"] = rc_ts["createdAt"].dt.to_period("M").dt.to_timestamp()
+        monthly_points = rc_ts.groupby("month").agg(
+            points=("amount", "sum"),
+            credits=("id", "count"),
+        ).reset_index()
+
+        fig_rp = go.Figure()
+        fig_rp.add_trace(go.Bar(
+            x=monthly_points["month"].dt.strftime("%b %Y"),
+            y=monthly_points["points"],
+            marker=dict(
+                color=monthly_points["points"],
+                colorscale=[[0, "#FDE68A"], [0.4, "#FBBF24"], [1, "#D97706"]],
+                showscale=False,
+            ),
+            text=monthly_points["points"],
+            textposition="outside",
+            textfont=dict(size=10, color="#334155"),
+        ))
+        fig_rp.update_layout(
+            title=f"⭐ Monthly Reward Points Earned  ·  {total_points_earned:,} total",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#334155", family="Inter"),
+            title_font=dict(color="#1E293B", size=14),
+            height=380, margin=dict(l=10, r=10, t=50, b=10),
+            xaxis=dict(gridcolor="rgba(0,0,0,0.06)", tickangle=-30, tickfont=dict(size=10)),
+            yaxis=dict(title="Points", gridcolor="rgba(0,0,0,0.06)"),
+        )
+        st.plotly_chart(fig_rp, width='stretch')
+
+    with rw2:
+        if not rcl.empty and "status" in rcl.columns:
+            claim_status = rcl["status"].value_counts().reset_index()
+            claim_status.columns = ["status", "count"]
+            status_colors = {
+                "transferred": "#10B981", "pending": "#F59E0B",
+                "approved": "#3B82F6", "rejected": "#EF4444",
+            }
+            fig_cs = px.pie(
+                claim_status, values="count", names="status",
+                title=f"💸 Claim Status  ·  {total_claims:,} claims",
+                hole=0.55,
+                color="status",
+                color_discrete_map=status_colors,
+            )
+            fig_cs.update_traces(
+                textinfo="percent",
+                textfont=dict(size=12, color="#334155", family="Inter"),
+                pull=[0.03] * len(claim_status),
+            )
+            transfer_pct = claims_transferred / total_claims * 100 if total_claims > 0 else 0
+            fig_cs.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#334155", family="Inter"),
+                title_font=dict(color="#1E293B", size=14),
+                height=380, margin=dict(l=30, r=30, t=50, b=30),
+                legend=dict(
+                    font=dict(size=11, color="#475569"),
+                    bgcolor="rgba(0,0,0,0)",
+                    orientation="h", x=0.0, y=-0.15,
+                ),
+                annotations=[dict(
+                    text=f"<b>{transfer_pct:.0f}%</b><br>transferred",
+                    x=0.5, y=0.5,
+                    font=dict(size=14, color="#10B981"),
+                    showarrow=False,
+                )],
+            )
+            st.plotly_chart(fig_cs, width='stretch')
+
+else:
+    st.info("No reward credit data available.")
+
 # ── Sidebar summary ────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 📊 Overview")
@@ -519,5 +614,4 @@ with st.sidebar:
     if fraud_total > 0:
         st.markdown(f"**Fraud checks:** {fraud_total:,}")
         st.markdown(f"**Fraud pass rate:** {fraud_pass_rate:.1f}%")
-    if avg_spend_num > 0:
-        st.markdown(f"**Avg bill amount:** ${avg_spend_num:,.1f} (USD)")
+    st.markdown(f"**Total spend:** ${total_spend_num:,.0f} (USD)")

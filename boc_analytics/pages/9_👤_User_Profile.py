@@ -9,7 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
-from data_loader import load_all
+from data_loader import load_all, CURRENCY_TO_USD
 from shared_styles import inject_shared_styles, inject_sidebar_brand
 
 st.set_page_config(page_title="BOC · User Profile", page_icon="👤", layout="wide", initial_sidebar_state="expanded")
@@ -114,8 +114,18 @@ else:
     recency_days = 999
     freq         = 0
 
-total_spend = u_ext["totalAmount"].sum() if not u_ext.empty and "totalAmount" in u_ext.columns else 0
-avg_spend   = u_ext["totalAmount"].mean() if not u_ext.empty and "totalAmount" in u_ext.columns else 0
+# Convert each bill's totalAmount to USD using currency
+if not u_ext.empty and "totalAmount" in u_ext.columns and "currency" in u_ext.columns:
+    _valid = u_ext.dropna(subset=["totalAmount", "currency"])
+    _usd_amounts = _valid.apply(
+        lambda r: r["totalAmount"] * CURRENCY_TO_USD.get(r["currency"], 0), axis=1
+    )
+    _usd_valid = _usd_amounts[_usd_amounts > 0]
+    total_spend = float(_usd_valid.sum())
+    avg_spend   = float(_usd_valid.mean()) if len(_usd_valid) > 0 else 0
+else:
+    total_spend = 0
+    avg_spend   = 0
 
 # Segment (simple)
 def get_segment(r_days, freq, spend):
@@ -135,8 +145,8 @@ rfm_seg = get_segment(recency_days, freq, total_spend)
 avatar_letter = str(u_data.get("name","?"))[0].upper()
 member_since  = u_data["createdAt"].strftime("%b %Y") if pd.notna(u_data.get("createdAt")) else "Unknown"
 
-# Format total spend without $
-spend_display = f"{total_spend:,.0f}"
+# Format total spend in USD
+spend_display = f"${total_spend:,.1f}"
 
 # DID status
 did_status = u_data.get("didStatus", "none")
@@ -156,7 +166,7 @@ st.markdown(f"""
     </div>
     <div style="text-align:right;">
       <div style="font-size:2.5rem;font-weight:900;color:#1E293B;">{spend_display}</div>
-      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;">Total Spend</div>
+      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;">Total Spend (USD)</div>
     </div>
   </div>
 </div>
@@ -167,7 +177,7 @@ s1, s2, s3, s4, s5, s6 = st.columns(6)
 has_wallet = "Yes" if pd.notna(u_data.get("mainWalletAddress")) else "No"
 stats = [
     (f"{freq}", "Bills Uploaded"),
-    (f"{avg_spend:,.1f}", "Avg Bill"),
+    (f"${avg_spend:,.1f}", "Avg Bill (USD)"),
     (f"{recency_days}d", "Last Active"),
     (f"{int(u_data.get('lifetimeRewardPoints', 0) or 0):,}", "Reward Balance"),
     (f"{u_ext['category'].nunique() if not u_ext.empty and 'category' in u_ext.columns else 0}", "Categories Used"),
@@ -296,19 +306,38 @@ with r2:
         # Calculate spend by category
         cat_spend = cat_df.groupby("category")["totalAmount"].sum().reset_index()
         cat_spend.columns = ["category", "spend"]
-        
+        cat_spend = cat_spend.sort_values("spend", ascending=False)
+
+        # Group categories with < 2% of total into "Other"
+        total = cat_spend["spend"].sum()
+        if total > 0:
+            cat_spend["pct"] = cat_spend["spend"] / total * 100
+            major = cat_spend[cat_spend["pct"] >= 2].copy()
+            minor = cat_spend[cat_spend["pct"] < 2]
+            if not minor.empty:
+                other_row = pd.DataFrame([{"category": "Other", "spend": minor["spend"].sum(), "pct": minor["pct"].sum()}])
+                cat_spend = pd.concat([major, other_row], ignore_index=True)
+            else:
+                cat_spend = major
+
         fig = px.pie(
             cat_spend, values="spend", names="category",
             title="🏷️ Spend by Category",
             hole=0.55,
             color_discrete_sequence=px.colors.qualitative.Vivid,
         )
-        fig.update_traces(textinfo="label+percent", textfont=dict(size=10, color="#334155"))
+        fig.update_traces(
+            textinfo="label+percent",
+            textfont=dict(size=11, color="#334155"),
+            textposition="outside",
+            pull=[0.03] * len(cat_spend),
+        )
         fig.update_layout(
             paper_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#334155"), title_font=dict(color="#1E293B", size=15),
-            height=320, margin=dict(l=10, r=10, t=50, b=10),
-            legend=dict(font=dict(size=9, color="#475569")),
+            height=380, margin=dict(l=30, r=30, t=50, b=30),
+            legend=dict(font=dict(size=9, color="#475569"), bgcolor="rgba(0,0,0,0)"),
+            uniformtext_minsize=9, uniformtext_mode="hide",
         )
         st.plotly_chart(fig, width='stretch')
     else:
@@ -365,7 +394,7 @@ if not u_ext.empty:
         _pages = max(1, (_total + _ROWS - 1) // _ROWS)
         if "prof_bills_pg" not in st.session_state:
             st.session_state["prof_bills_pg"] = 1
-        _cpg = st.session_state["prof_bills_pg"]
+        _cpg = min(st.session_state["prof_bills_pg"], _pages)
         _s = (_cpg - 1) * _ROWS
         _e = min(_s + _ROWS, _total)
         st.dataframe(

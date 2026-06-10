@@ -70,14 +70,13 @@ _median_val = _usd_valid.median() if len(_usd_valid) > 0 else 0
 _mean_val = _usd_valid.mean() if len(_usd_valid) > 0 else 0
 _sum_val = _usd_valid.sum()
 
-k1, k2, k3, k4 = st.columns(4)
+k1, k2, k3 = st.columns(3)
 kv = [
     ("🧾", f"{len(be):,}", "Completed Bills"),
     ("💰", f"${_sum_val:,.0f}", "Total Spend (USD)"),
-    ("📊", f"${_mean_val:,.1f}", "Avg Bill Amount (USD)"),
     ("🏷️", str(filtered["category"].nunique()), "Categories"),
 ]
-for col,(icon,val,lbl) in zip([k1,k2,k3,k4],kv):
+for col,(icon,val,lbl) in zip([k1,k2,k3],kv):
     col.markdown(f"""<div style="background:#FFFFFF;
     border:1px solid #E2E8F0;border-radius:14px;padding:1rem;text-align:center;
     position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">

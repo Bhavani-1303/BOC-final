@@ -1,4 +1,4 @@
-﻿"""
+"""
 pages/2_👥_Users.py — User analytics
 """
 import sys, os
@@ -535,20 +535,53 @@ st.info('🏆 **Leaderboard** — The top 20 users ranked by lifetime reward poi
 
 st.markdown("### 🏅 Top 20 Users Leaderboard")
 
-top_users = user.sort_values("lifetimeRewardPoints", ascending=False).head(20).copy()
+# Build leaderboard data with accurate spend + currency
+_lb_user = user[["id", "name", "email", "lifetimeRewardPoints", "bill_count", "tenure_days"]].copy()
+
+# Compute total spend PER USER with their primary currency
+if not be.empty and not bill.empty and "userId" in bill.columns:
+    _bill_user = bill[["id", "userId"]].rename(columns={"id": "billId"})
+    _be_spend = be[["billId", "totalAmount", "currency"]].dropna(subset=["totalAmount", "currency"])
+    _be_spend = _be_spend[_be_spend["totalAmount"] > 0]
+    _be_with_user = _be_spend.merge(_bill_user, on="billId", how="left").dropna(subset=["userId"])
+
+    # Per user: sum spend in their most-used currency
+    _user_currency = _be_with_user.groupby("userId")["currency"].agg(lambda x: x.value_counts().index[0] if len(x) > 0 else "").reset_index()
+    _user_currency.columns = ["userId", "primary_currency"]
+
+    _user_spend_detail = _be_with_user.merge(_user_currency, on="userId", how="left")
+    # Sum only amounts in their primary currency for consistency
+    _user_spend_primary = _user_spend_detail[_user_spend_detail["currency"] == _user_spend_detail["primary_currency"]]
+    _user_spend_agg = _user_spend_primary.groupby("userId").agg(
+        total_spend_raw=("totalAmount", "sum"),
+    ).reset_index()
+    _user_spend_agg = _user_spend_agg.merge(_user_currency, on="userId", how="left")
+
+    # Also count bill_extraction records as actual completed bills
+    _user_be_count = _be_with_user.groupby("userId").size().reset_index(name="be_bill_count")
+
+    _lb_user = _lb_user.merge(_user_spend_agg, left_on="id", right_on="userId", how="left", suffixes=("", "_sp"))
+    _lb_user = _lb_user.merge(_user_be_count, left_on="id", right_on="userId", how="left", suffixes=("", "_bc"))
+    _lb_user["total_spend_raw"] = _lb_user["total_spend_raw"].fillna(0)
+    _lb_user["primary_currency"] = _lb_user["primary_currency"].fillna("")
+    _lb_user["be_bill_count"] = _lb_user["be_bill_count"].fillna(0).astype(int)
+
+    # Format spend with currency
+    _lb_user["Total Spend"] = _lb_user.apply(
+        lambda r: f"{r['total_spend_raw']:,.1f} {r['primary_currency']}" if r['total_spend_raw'] > 0 else "0",
+        axis=1,
+    )
+else:
+    _lb_user["Total Spend"] = "0"
+    _lb_user["be_bill_count"] = 0
+
+top_users = _lb_user.sort_values("lifetimeRewardPoints", ascending=False).head(20).copy()
 top_users["rank"] = range(1, len(top_users)+1)
 medals = {1:"🥇", 2:"🥈", 3:"🥉"}
+top_users["rank"] = top_users["rank"].apply(lambda r: medals.get(r, str(r)))
 
-display_cols = ["rank","name","email","lifetimeRewardPoints","bill_count","total_spend","tenure_days"]
-available = [c for c in display_cols if c in top_users.columns]
-top_display = top_users[available].copy()
-top_display["rank"] = top_display["rank"].apply(lambda r: medals.get(r, str(r)))
-top_display.columns = [c.replace("lifetimeRewardPoints","Reward Pts")
-                         .replace("bill_count","Bills")
-                         .replace("total_spend","Total Spend")
-                         .replace("tenure_days","Tenure (days)")
-                         .replace("name","Name").replace("email","Email").replace("rank","#")
-                       for c in top_display.columns]
+top_display = top_users[["rank", "name", "email", "lifetimeRewardPoints", "bill_count", "Total Spend", "tenure_days"]].copy()
+top_display.columns = ["#", "Name", "Email", "Reward Pts", "Bills", "Total Spend", "Tenure (days)"]
 
 st.dataframe(
     top_display,

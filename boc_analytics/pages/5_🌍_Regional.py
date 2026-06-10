@@ -98,24 +98,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 st.info('🗺️ **Geographic Distribution** — The world map visualizes transaction density by country, derived from bill currencies. Toggle between bill count, total spend, average spend, or unique merchants to understand regional adoption patterns. Select a country below to see detailed stats.')
 
-# ── Top Vendor Filter ─────────────────────────────────────────────────────────
-top_vendors = be_geo["merchantName"].value_counts().head(10).index.tolist()
-vendor_options = ["All Vendors"] + top_vendors
-selected_vendor = st.radio("🏪 Filter by Top Vendor:", vendor_options, horizontal=True, key="vendor_filter")
-
-# Apply vendor filter
-if selected_vendor != "All Vendors":
-    be_geo_filtered = be_geo[be_geo["merchantName"] == selected_vendor]
-    # Recalculate aggregates for filtered data
-    curr_agg_filtered = be_geo_filtered.groupby(["currency","country","iso3"]).agg(
-        bill_count=("totalAmount","count"),
-        total_spend=("totalAmount","sum"),
-        avg_spend=("totalAmount","mean"),
-        unique_merchants=("merchantName","nunique"),
-    ).reset_index().sort_values("bill_count", ascending=False)
-    map_source = curr_agg_filtered
-else:
-    map_source = curr_agg
+map_source = curr_agg
 
 # ── World Choropleth Map + Country Detail Panel ────────────────────────────────
 map_df = map_source.dropna(subset=["iso3"])
@@ -132,7 +115,7 @@ with map_col:
         hover_name="country",
         hover_data={"currency":True,"bill_count":True,"total_spend":":.0f","avg_spend":":.1f"},
         color_continuous_scale=["#F0FDF4","#34D399","#0891B2"],
-        title=f"🗺️ World Map — {map_metric} by Country" + (f" ({selected_vendor})" if selected_vendor != "All Vendors" else ""),
+        title=f"🗺️ World Map — {map_metric} by Country",
         projection="natural earth",
     )
     fig_map.update_layout(
@@ -246,7 +229,7 @@ with ch1:
 
 with ch2:
     top_countries = map_source.head(10)["country"].tolist()
-    _src = be_geo_filtered if selected_vendor != "All Vendors" else be_geo
+    _src = be_geo
     hmap = _src[_src["country"].isin(top_countries)].groupby(
         ["country", "category"]
     ).size().reset_index(name="count")

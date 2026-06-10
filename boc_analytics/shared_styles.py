@@ -49,12 +49,24 @@ SHARED_CSS = """
 /* Select/Multiselect — internal search input must be transparent */
 [data-testid="stSidebar"] [data-baseweb="select"] input {
     background: transparent !important;
-    color: #FFFFFF !important;
-    caret-color: #FFFFFF !important;
+    color: #1E293B !important;
+    caret-color: #1E293B !important;
+}
+/* All text inside sidebar select/input boxes — black for readability */
+[data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] * {
+    color: #1E293B !important;
+}
+[data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"] * {
+    color: #1E293B !important;
+}
+/* Dropdown arrow icon stays visible */
+[data-testid="stSidebar"] [data-baseweb="select"] svg {
+    fill: #64748B !important;
+    color: #64748B !important;
 }
 /* Selected value text in selectbox */
 [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] > div > div {
-    color: #E2E8F0 !important;
+    color: #1E293B !important;
 }
 /* Placeholder text in multiselect */
 [data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"] > div > div > div {

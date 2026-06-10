@@ -262,7 +262,8 @@ with i2:
               🏷️ {merch_bills['category'].mode()[0] if len(merch_bills) else 'N/A'}</span>
             </div>""", unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+
+
 
 # ── Merchant Table (ALL merchants, with search) ────────────────────────────────
 st.markdown("### 📋 Full Merchant Table")

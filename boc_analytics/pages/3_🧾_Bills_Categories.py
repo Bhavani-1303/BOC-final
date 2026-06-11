@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
 from data_loader import load_all, CURRENCY_TO_USD
-from shared_styles import inject_shared_styles, inject_sidebar_brand
+from shared_styles import inject_shared_styles, inject_sidebar_brand, render_searchable_table
 
 st.set_page_config(page_title="BOC · Bills & Categories", page_icon="🧾", layout="wide", initial_sidebar_state="expanded")
 st.markdown("""
@@ -312,17 +312,9 @@ st.markdown("<br>", unsafe_allow_html=True)
 with st.expander("📋 View Raw Bill Extractions"):
     cols_show = [c for c in ["merchantName","category","totalAmount","taxAmount","currency","invoiceDate"] if c in filtered.columns]
     _raw = filtered[cols_show].sort_values("totalAmount", ascending=False).reset_index(drop=True)
-    _ROWS = 15
-    _total = len(_raw)
-    _pages = max(1, (_total + _ROWS - 1) // _ROWS)
-    if "bills_pg" not in st.session_state:
-        st.session_state["bills_pg"] = 1
-    _cpg = st.session_state["bills_pg"]
-    _s = (_cpg - 1) * _ROWS
-    _e = min(_s + _ROWS, _total)
-    st.dataframe(_raw.iloc[_s:_e], width='stretch', hide_index=True)
-    st.number_input("Page", min_value=1, max_value=_pages, value=_cpg, step=1, key="bills_raw_page",
-                    on_change=lambda: st.session_state.update({"bills_pg": st.session_state["bills_raw_page"]}))
-    st.caption(f"Showing {_s+1}–{_e} of {_total:,} bills  ·  Page {_cpg} of {_pages}")
 
-
+    render_searchable_table(
+        _raw,
+        search_placeholder="Search by merchant, category, or currency...",
+        search_columns=["merchantName", "category", "currency"],
+    )

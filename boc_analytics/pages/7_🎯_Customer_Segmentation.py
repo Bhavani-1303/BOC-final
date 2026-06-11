@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from data_loader import load_all
-from shared_styles import inject_shared_styles, inject_sidebar_brand
+from shared_styles import inject_shared_styles, inject_sidebar_brand, render_searchable_table
 
 st.set_page_config(page_title="BOC · Customer Segmentation", page_icon="🎯", layout="wide", initial_sidebar_state="expanded")
 
@@ -262,17 +262,10 @@ with st.expander("📋 View Full User Segment Data"):
     display_df = display_df.rename(columns={"name": "Name", "email": "Email", "Cluster_Label": "Segment"})
     # Format
     display_df["Monetary"] = display_df["Monetary"].apply(lambda x: f"{x:,.2f}")
-    
-    _ROWS = 15
-    _total = len(display_df)
-    _pages = max(1, (_total + _ROWS - 1) // _ROWS)
-    if "seg_cpg" not in st.session_state:
-        st.session_state["seg_cpg"] = 1
-    _cpg = st.session_state["seg_cpg"]
-    _s = (_cpg - 1) * _ROWS
-    _e = min(_s + _ROWS, _total)
-    st.dataframe(display_df.iloc[_s:_e], width='stretch', hide_index=True)
-    st.number_input("Page", min_value=1, max_value=_pages, value=_cpg, step=1, key="seg_page",
-                    on_change=lambda: st.session_state.update({"seg_cpg": st.session_state["seg_page"]}))
-    st.caption(f"Showing {_s+1}–{_e} of {_total:,} users  ·  Page {_cpg} of {_pages}")
+
+    render_searchable_table(
+        display_df,
+        search_placeholder="Search by name or email...",
+        search_columns=["Name", "Email"],
+    )
 

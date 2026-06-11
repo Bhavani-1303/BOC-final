@@ -80,10 +80,10 @@ for col,(icon,val,lbl) in zip([k1,k2,k3],kv):
     col.markdown(f"""<div style="background:#FFFFFF;
     border:1px solid #E2E8F0;border-radius:14px;padding:1rem;text-align:center;
     position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#CBD5E1,#94A3B8);"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#CBD5E1,#1E293B);"></div>
     <div style="font-size:1.4rem">{icon}</div>
     <div style="font-size:1.6rem;font-weight:800;color:#1E293B">{val}</div>
-    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-top:2px">{lbl}</div>
+    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:#000000;font-weight:700;margin-top:2px">{lbl}</div>
     </div>""", unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
@@ -173,12 +173,12 @@ with r1:
                     title="Category",
                     tickangle=-30,
                     gridcolor="rgba(0,0,0,0.06)",
-                    tickfont=dict(size=11, color="#475569"),
+                    tickfont=dict(size=11, color="#1E293B"),
                 ),
                 yaxis=dict(
                     title="Number of Bills",
                     gridcolor="rgba(0,0,0,0.06)",
-                    title_font=dict(color="#475569"),
+                    title_font=dict(color="#1E293B"),
                     tickfont=dict(color="#64748B"),
                 ),
                 showlegend=False,
@@ -222,10 +222,10 @@ with r2:
         xaxis=dict(
             title="Number of Bills",
             gridcolor="rgba(0,0,0,0.06)",
-            title_font=dict(color="#475569"),
+            title_font=dict(color="#1E293B"),
             tickfont=dict(color="#64748B"),
         ),
-        yaxis=dict(gridcolor="rgba(0,0,0,0)", tickfont=dict(color="#475569")),
+        yaxis=dict(gridcolor="rgba(0,0,0,0)", tickfont=dict(color="#1E293B")),
         showlegend=False,
     )
     st.plotly_chart(fig2, width='stretch')
@@ -259,7 +259,7 @@ with r3:
         font=dict(color="#334155"), title_font=dict(color="#1E293B", size=15),
         height=400, margin=dict(l=10,r=10,t=50,b=10),
         xaxis=dict(gridcolor="rgba(0,0,0,0.06)", title="Total Amount"),
-        yaxis=dict(gridcolor="rgba(0,0,0,0.0)", tickfont=dict(color="#475569")),
+        yaxis=dict(gridcolor="rgba(0,0,0,0.0)", tickfont=dict(color="#1E293B")),
     )
     st.plotly_chart(fig, width='stretch')
 
@@ -299,7 +299,7 @@ with r4:
             font=dict(color="#334155"), title_font=dict(color="#1E293B", size=15),
             height=400, margin=dict(l=10,r=140,t=50,b=10),
             xaxis=dict(title="Average Tax Rate (%)", gridcolor="rgba(0,0,0,0.06)"),
-            yaxis=dict(gridcolor="rgba(0,0,0,0.0)", tickfont=dict(color="#475569")),
+            yaxis=dict(gridcolor="rgba(0,0,0,0.0)", tickfont=dict(color="#1E293B")),
             showlegend=False,
         )
         st.plotly_chart(fig, width='stretch')

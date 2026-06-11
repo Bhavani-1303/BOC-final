@@ -41,13 +41,13 @@ html,body,[class*="css"]{font-family:'Inter',sans-serif;background:#FFFFFF;color
 }
 .kpi-top-bar {
     position:absolute;top:0;left:0;right:0;height:3px;
-    background:linear-gradient(90deg,#CBD5E1,#94A3B8);
+    background:linear-gradient(90deg,#CBD5E1,#1E293B);
 }
 .kpi-val {
     font-size:1.6rem;font-weight:800;color:#1E293B;
 }
 .kpi-lbl {
-    font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-top:2px;
+    font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:#000000;font-weight:700;margin-top:2px;
 }
 .ml-insight-container {
     display: grid;
@@ -190,7 +190,7 @@ with r1:
             yaxis=dict(
                 title="New Users",
                 gridcolor="rgba(0,0,0,0.06)",
-                title_font=dict(color="#475569"),
+                title_font=dict(color="#1E293B"),
                 tickfont=dict(color="#64748B"),
             ),
             showlegend=False,
@@ -234,7 +234,7 @@ with r2:
         height=340,
         margin=dict(l=10, r=10, t=55, b=10),
         legend=dict(
-            font=dict(size=10, color="#475569"),
+            font=dict(size=10, color="#1E293B"),
             bgcolor="rgba(248,250,252,0.8)",
             bordercolor="#E2E8F0",
             borderwidth=1,
@@ -262,7 +262,7 @@ st.markdown("### 🛡️ DID Status Distribution")
 if "didStatus" in user.columns:
     did_counts = user["didStatus"].fillna("not_started").value_counts().reset_index()
     did_counts.columns = ["Status", "Count"]
-    did_colors = {"completed": "#10B981", "ready": "#10B981", "pending": "#F59E0B", "not_started": "#94A3B8", "none": "#94A3B8", "failed": "#EF4444"}
+    did_colors = {"completed": "#86EFAC", "ready": "#6EE7B7", "pending": "#FDE68A", "not_started": "#C4B5FD", "none": "#93C5FD", "failed": "#FCA5A5"}
 
     d1, d2 = st.columns(2)
     with d1:
@@ -274,7 +274,7 @@ if "didStatus" in user.columns:
         )
         fig_did.update_traces(
             textinfo="label+percent+value",
-            textfont=dict(size=11, color="#334155"),
+            textfont=dict(size=12, color="#1E293B", weight=700),
         )
         fig_did.update_layout(
             title="🛡️ DID Verification Status",
@@ -284,7 +284,7 @@ if "didStatus" in user.columns:
             height=380,
             margin=dict(l=10, r=10, t=55, b=10),
             legend=dict(
-                font=dict(size=10, color="#475569"),
+                font=dict(size=10, color="#1E293B"),
                 bgcolor="rgba(248,250,252,0.8)",
                 bordercolor="#E2E8F0",
                 borderwidth=1,
@@ -366,7 +366,7 @@ for col, (val, lbl) in zip([rk1, rk2, rk3], [
     col.markdown(f"""<div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;
     padding:1rem;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
     <div style="font-size:1.8rem;font-weight:800;color:#1E293B">{val}</div>
-    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-top:4px">{lbl}</div>
+    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:#000000;font-weight:700;margin-top:4px">{lbl}</div>
     </div>""", unsafe_allow_html=True)
 
 # Top 15 Referral Codes Chart
@@ -518,7 +518,7 @@ if "createdAt" in user.columns:
         peak_hour = int(hour_counts.loc[hour_counts["Users"].idxmax(), "Hour"])
         st.markdown(f"""
         <div style="background:rgba(5,150,105,0.06);border-left:3px solid #059669;
-        border-radius:0 8px 8px 0;padding:0.7rem 1rem;margin:0.5rem 0 1rem 0;font-size:0.85rem;color:#475569">
+        border-radius:0 8px 8px 0;padding:0.7rem 1rem;margin:0.5rem 0 1rem 0;font-size:0.85rem;color:#1E293B">
         <b style="color:#1E293B">📊 Insight:</b> In the selected range ({dow_from} to {dow_to}), peak signup day is <b>{peak_day}</b> with {day_counts[day_counts['Day']==peak_day]['Users'].values[0]:,} registrations.
         Most signups occur around <b>{peak_hour}:00 UTC</b>.
         </div>

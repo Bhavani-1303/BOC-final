@@ -27,9 +27,9 @@ html,body,[class*="css"]{font-family:'Inter',sans-serif;background:#FFFFFF;color
   text-align:center;position:relative;overflow:hidden;
   box-shadow:0 1px 3px rgba(0,0,0,0.06);}
 .merch-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,#CBD5E1,#94A3B8);}
+  background:linear-gradient(90deg,#CBD5E1,#1E293B);}
 .merch-kpi-val{font-size:1.8rem;font-weight:900;color:#1E293B;}
-.merch-kpi-lbl{font-size:0.7rem;text-transform:uppercase;letter-spacing:1.2px;color:#94A3B8;margin-top:2px;}
+.merch-kpi-lbl{font-size:0.7rem;text-transform:uppercase;letter-spacing:1.2px;color:#000000;font-weight:700;margin-top:2px;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -122,7 +122,7 @@ with r1:
         height=max(420, top_n * 22),
         margin=dict(l=10,r=80,t=50,b=10),
         xaxis=dict(title="Number of Bills", gridcolor="rgba(0,0,0,0.06)"),
-        yaxis=dict(gridcolor="rgba(0,0,0,0.0)", tickfont=dict(size=10, color="#475569")),
+        yaxis=dict(gridcolor="rgba(0,0,0,0.0)", tickfont=dict(size=10, color="#1E293B")),
     )
     st.plotly_chart(fig, width='stretch')
 
@@ -149,7 +149,7 @@ with r2:
         title_font=dict(color="#1E293B", size=15),
         height=420,
         margin=dict(l=10, r=10, t=50, b=10),
-        legend=dict(font=dict(size=9, color="#475569"), bgcolor="rgba(0,0,0,0)"),
+        legend=dict(font=dict(size=9, color="#1E293B"), bgcolor="rgba(0,0,0,0)"),
         annotations=[dict(
             text="<b>Categories</b>",
             x=0.5, y=0.5,
@@ -196,7 +196,7 @@ with i1:
             font=dict(color="#334155"), title_font=dict(color="#1E293B", size=15),
             height=600, margin=dict(l=10,r=80,t=50,b=10),
             xaxis=dict(gridcolor="rgba(0,0,0,0.06)"),
-            yaxis=dict(tickfont=dict(size=9, color="#475569")),
+            yaxis=dict(tickfont=dict(size=9, color="#1E293B")),
         )
         st.plotly_chart(fig, width='stretch')
     else:

@@ -25,13 +25,13 @@ html,body,[class*="css"]{font-family:'Inter',sans-serif;background:#FFFFFF;color
   text-align:center;position:relative;overflow:hidden;
   box-shadow:0 1px 3px rgba(0,0,0,0.06);}
 .sess-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,#CBD5E1,#94A3B8);}
+  background:linear-gradient(90deg,#CBD5E1,#1E293B);}
 .sess-kpi-val{font-size:1.8rem;font-weight:900;color:#1E293B;}
-.sess-kpi-lbl{font-size:0.7rem;text-transform:uppercase;letter-spacing:1.2px;color:#94A3B8;margin-top:2px;}
+.sess-kpi-lbl{font-size:0.7rem;text-transform:uppercase;letter-spacing:1.2px;color:#000000;font-weight:700;margin-top:2px;}
 .sess-kpi-desc{font-size:0.7rem;color:#64748B;margin-top:4px;line-height:1.3;}
 .section-desc{background:linear-gradient(135deg,rgba(124,58,237,0.04),rgba(34,211,238,0.04));
   border-left:3px solid #7C3AED;padding:0.8rem 1.2rem;border-radius:0 8px 8px 0;
-  margin-bottom:1rem;font-size:0.88rem;color:#475569;line-height:1.6;}
+  margin-bottom:1rem;font-size:0.88rem;color:#1E293B;line-height:1.6;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -222,7 +222,7 @@ with r2c1:
         device_counts, values="count", names="device",
         title="📲 Mobile vs Desktop Sessions",
         hole=0.5,
-        color_discrete_map={"Mobile": "#7C3AED", "Desktop": "#22D3EE", "Unknown": "#94A3B8"},
+        color_discrete_map={"Mobile": "#7C3AED", "Desktop": "#22D3EE", "Unknown": "#1E293B"},
     )
     fig_dev.update_traces(
         textinfo="label+percent",
@@ -234,7 +234,7 @@ with r2c1:
         font=dict(color="#334155", family="Inter"),
         title_font=dict(color="#1E293B", size=15),
         height=400, margin=dict(l=10, r=10, t=50, b=10),
-        legend=dict(font=dict(size=10, color="#475569"), bgcolor="rgba(0,0,0,0)"),
+        legend=dict(font=dict(size=10, color="#1E293B"), bgcolor="rgba(0,0,0,0)"),
         annotations=[dict(
             text=f"<b>{total_sessions:,}</b><br>sessions",
             x=0.5, y=0.5, font=dict(size=13, color="#1E293B"), showarrow=False,
@@ -248,11 +248,11 @@ with r2c2:
 
     os_colors = {
         "Android": "#7C3AED", "Windows": "#059669", "iOS": "#F97316",
-        "Linux": "#DB2777", "macOS": "#0891B2", "Other": "#94A3B8",
+        "Linux": "#DB2777", "macOS": "#0891B2", "Other": "#1E293B",
     }
     fig_os = go.Figure(go.Bar(
         x=os_counts["os"], y=os_counts["count"],
-        marker=dict(color=[os_colors.get(o, "#94A3B8") for o in os_counts["os"]]),
+        marker=dict(color=[os_colors.get(o, "#1E293B") for o in os_counts["os"]]),
         text=os_counts["count"].apply(lambda x: f"{x:,}"),
         textposition="outside",
         textfont=dict(color="#334155", size=10),
@@ -273,11 +273,11 @@ with r2c3:
 
     br_colors = {
         "Chrome": "#7C3AED", "Safari": "#059669", "Samsung": "#F97316",
-        "Edge": "#2563EB", "Opera": "#DC2626", "Firefox": "#D97706", "Other": "#94A3B8",
+        "Edge": "#2563EB", "Opera": "#DC2626", "Firefox": "#D97706", "Other": "#1E293B",
     }
     fig_br = go.Figure(go.Bar(
         x=br_counts["browser"], y=br_counts["count"],
-        marker=dict(color=[br_colors.get(b, "#94A3B8") for b in br_counts["browser"]]),
+        marker=dict(color=[br_colors.get(b, "#1E293B") for b in br_counts["browser"]]),
         text=br_counts["count"].apply(lambda x: f"{x:,}"),
         textposition="outside",
         textfont=dict(color="#334155", size=10),
@@ -338,7 +338,7 @@ with r3c1:
         font=dict(color="#334155"), title_font=dict(color="#1E293B", size=15),
         height=400, margin=dict(l=10, r=60, t=50, b=10),
         xaxis=dict(title="Sessions", gridcolor="rgba(0,0,0,0.06)"),
-        yaxis=dict(tickfont=dict(size=9, color="#475569")),
+        yaxis=dict(tickfont=dict(size=9, color="#1E293B")),
     )
     st.plotly_chart(fig_tu, width='stretch')
 
@@ -365,7 +365,7 @@ with r3c2:
         font=dict(color="#334155", family="Inter"),
         title_font=dict(color="#1E293B", size=15),
         height=400, margin=dict(l=10, r=10, t=50, b=10),
-        legend=dict(font=dict(size=10, color="#475569"), bgcolor="rgba(0,0,0,0)"),
+        legend=dict(font=dict(size=10, color="#1E293B"), bgcolor="rgba(0,0,0,0)"),
         annotations=[dict(
             text=f"<b>{return_pct:.0f}%</b><br>return",
             x=0.5, y=0.5, font=dict(size=14, color="#7C3AED"), showarrow=False,

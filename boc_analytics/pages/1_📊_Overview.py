@@ -23,9 +23,9 @@ html,body,[class*="css"]{font-family:'Inter',sans-serif;background:#FFFFFF;color
   border-radius:14px;padding:1.2rem 1.5rem;position:relative;overflow:hidden;
   box-shadow:0 1px 3px rgba(0,0,0,0.06);}
 .metric-box::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,#CBD5E1,#94A3B8);}
+  background:linear-gradient(90deg,#CBD5E1,#1E293B);}
 .m-val{font-size:1.9rem;font-weight:800;color:#1E293B;}
-.m-lbl{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-top:2px;}
+.m-lbl{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:#000000;font-weight:700;margin-top:2px;}
 [data-testid="stSidebar"]{background:linear-gradient(180deg,#0F172A,#1E293B) !important;
   border-right:1px solid #334155;}
 .kpi-container {
@@ -200,7 +200,7 @@ with r1c1:
                 yaxis=dict(
                     title="Bills Uploaded",
                     gridcolor="rgba(0,0,0,0.06)",
-                    title_font=dict(color="#475569"),
+                    title_font=dict(color="#1E293B"),
                     tickfont=dict(color="#64748B"),
                 ),
                 showlegend=False,
@@ -255,7 +255,7 @@ with r1c2:
             height=380,
             margin=dict(l=10, r=10, t=55, b=10),
             legend=dict(
-                font=dict(size=10, color="#475569"),
+                font=dict(size=10, color="#1E293B"),
                 bgcolor="rgba(248,250,252,0.8)",
                 bordercolor="#E2E8F0",
                 borderwidth=1,
@@ -304,7 +304,7 @@ with r2c1:
             font=dict(color="#334155"), title_font=dict(color="#1E293B", size=15),
             height=400, margin=dict(l=10,r=30,t=50,b=10),
             xaxis=dict(gridcolor="rgba(0,0,0,0.06)"),
-            yaxis=dict(gridcolor="rgba(0,0,0,0.06)", tickfont=dict(color="#475569")),
+            yaxis=dict(gridcolor="rgba(0,0,0,0.06)", tickfont=dict(color="#1E293B")),
         )
         st.plotly_chart(fig, width='stretch')
 
@@ -333,7 +333,7 @@ with r2c2:
             height=450,
             margin=dict(l=10, r=10, t=80, b=20),
             legend=dict(
-                font=dict(size=11, color="#475569"),
+                font=dict(size=11, color="#1E293B"),
                 bgcolor="rgba(248,250,252,0.8)",
                 bordercolor="#E2E8F0",
                 borderwidth=1,
@@ -351,122 +351,6 @@ with r2c2:
     else:
         st.info("No fraud check data available.")
 
-
-# ── Row 3: Fraud Score — Combined Distributions ──────────────────────────────
-if fraud_total > 0 and "score" in fc.columns and "finalResult" in fc.columns:
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.info("📊 **Fraud Score — Combined Distributions** — These histograms show how fraud scores are distributed across all bills and broken down by detection result. Lower scores indicate authentic bills; higher scores suggest AI-generated or digitally edited content.")
-
-    # ── Row 3a: All Bills + Real (side by side) ────────────────────────────────
-    fc_real = fc[fc["finalResult"] == "Real"]
-    fc_edited = fc[fc["finalResult"] == "Digitally Edited"]
-    fc_ai = fc[fc["finalResult"] == "AI Generated"]
-
-    r3c1, r3c2 = st.columns(2)
-
-    with r3c1:
-        fig_all = go.Figure(go.Histogram(
-            x=fc["score"].dropna(), nbinsx=50,
-            marker=dict(color="#EF4444", line=dict(width=0.3, color="#FFFFFF")),
-        ))
-        fig_all.update_layout(
-            title=f"All Bills  (n={fraud_total:,})",
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#334155", family="Inter"),
-            title_font=dict(color="#1E293B", size=14),
-            height=320, margin=dict(l=10, r=10, t=45, b=10),
-            xaxis=dict(title="Fraud score", range=[0, 100], gridcolor="rgba(0,0,0,0.06)"),
-            yaxis=dict(title="Bills", gridcolor="rgba(0,0,0,0.06)"),
-        )
-        st.plotly_chart(fig_all, width='stretch')
-
-    with r3c2:
-        fig_real = go.Figure(go.Histogram(
-            x=fc_real["score"].dropna(), nbinsx=50,
-            marker=dict(color="#10B981", line=dict(width=0.3, color="#FFFFFF")),
-        ))
-        fig_real.update_layout(
-            title=f"Real  (n={len(fc_real):,})",
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#334155", family="Inter"),
-            title_font=dict(color="#1E293B", size=14),
-            height=320, margin=dict(l=10, r=10, t=45, b=10),
-            xaxis=dict(title="Fraud score", range=[0, 100], gridcolor="rgba(0,0,0,0.06)"),
-            yaxis=dict(title="Bills", gridcolor="rgba(0,0,0,0.06)"),
-        )
-        st.plotly_chart(fig_real, width='stretch')
-
-    # ── Row 3b: Digitally Edited + AI Generated + Detection Breakdown ────────
-    r4c1, r4c2, r4c3 = st.columns(3)
-
-    with r4c1:
-        fig_edited = go.Figure(go.Histogram(
-            x=fc_edited["score"].dropna(), nbinsx=50,
-            marker=dict(color="#F59E0B", line=dict(width=0.3, color="#FFFFFF")),
-        ))
-        fig_edited.update_layout(
-            title=f"Digitally Edited  (n={len(fc_edited):,})",
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#334155", family="Inter"),
-            title_font=dict(color="#1E293B", size=13),
-            height=320, margin=dict(l=10, r=10, t=45, b=10),
-            xaxis=dict(title="Fraud score", range=[0, 100], gridcolor="rgba(0,0,0,0.06)"),
-            yaxis=dict(title="Bills", gridcolor="rgba(0,0,0,0.06)"),
-        )
-        st.plotly_chart(fig_edited, width='stretch')
-
-    with r4c2:
-        fig_ai = go.Figure(go.Histogram(
-            x=fc_ai["score"].dropna(), nbinsx=50,
-            marker=dict(color="#EF4444", line=dict(width=0.3, color="#FFFFFF")),
-        ))
-        fig_ai.update_layout(
-            title=f"AI Generated  (n={len(fc_ai):,})",
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#334155", family="Inter"),
-            title_font=dict(color="#1E293B", size=13),
-            height=320, margin=dict(l=10, r=10, t=45, b=10),
-            xaxis=dict(title="Fraud score", range=[0, 100], gridcolor="rgba(0,0,0,0.06)"),
-            yaxis=dict(title="Bills", gridcolor="rgba(0,0,0,0.06)"),
-        )
-        st.plotly_chart(fig_ai, width='stretch')
-
-    with r4c3:
-        result_counts = fc["finalResult"].value_counts().reset_index()
-        result_counts.columns = ["result", "count"]
-        result_color_map = {"Real": "#10B981", "Digitally Edited": "#F59E0B", "AI Generated": "#EF4444"}
-
-        fig_result = px.pie(
-            result_counts, values="count", names="result",
-            title=f"🔬 Detection Result  ·  {fraud_total:,}",
-            hole=0.55,
-            color="result",
-            color_discrete_map=result_color_map,
-        )
-        fig_result.update_traces(
-            textinfo="percent+value",
-            textfont=dict(size=10, color="#334155", family="Inter"),
-            pull=[0.03] * len(result_counts),
-        )
-        real_pct = len(fc_real) / fraud_total * 100 if fraud_total > 0 else 0
-        fig_result.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#334155", family="Inter"),
-            title_font=dict(color="#1E293B", size=13),
-            height=320, margin=dict(l=10, r=10, t=45, b=10),
-            legend=dict(
-                font=dict(size=9, color="#475569"),
-                bgcolor="rgba(0,0,0,0)",
-                orientation="h", x=0.0, y=-0.12,
-            ),
-            annotations=[dict(
-                text=f"<b>{real_pct:.0f}%</b><br>Real",
-                x=0.5, y=0.5,
-                font=dict(size=14, color="#10B981"),
-                showarrow=False,
-            )],
-        )
-        st.plotly_chart(fig_result, width='stretch')
 
 # ── Fraud Flags ───────────────────────────────────────────────────────────────
 if fraud_total > 0:
@@ -500,7 +384,7 @@ if fraud_total > 0:
                 font=dict(color="#334155"), title_font=dict(color="#1E293B", size=13),
                 height=350, margin=dict(l=10, r=10, t=50, b=10),
                 xaxis=dict(gridcolor="rgba(0,0,0,0.06)"),
-                yaxis=dict(gridcolor="rgba(0,0,0,0.0)", tickfont=dict(color="#475569")),
+                yaxis=dict(gridcolor="rgba(0,0,0,0.0)", tickfont=dict(color="#1E293B")),
                 coloraxis_showscale=False, showlegend=False,
             )
             st.plotly_chart(fig, width='stretch')
@@ -584,7 +468,7 @@ if not rc.empty:
                 title_font=dict(color="#1E293B", size=14),
                 height=380, margin=dict(l=30, r=30, t=50, b=30),
                 legend=dict(
-                    font=dict(size=11, color="#475569"),
+                    font=dict(size=11, color="#1E293B"),
                     bgcolor="rgba(0,0,0,0)",
                     orientation="h", x=0.0, y=-0.15,
                 ),

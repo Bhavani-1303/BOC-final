@@ -76,18 +76,18 @@ for col,(icon,val,lbl) in zip([k1,k2],[
     col.markdown(f"""<div style="background:#FFFFFF;
     border:1px solid #E2E8F0;border-radius:14px;padding:1rem;text-align:center;
     position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#CBD5E1,#94A3B8);"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#CBD5E1,#1E293B);"></div>
     <div style="font-size:1.5rem">{icon}</div>
     <div style="font-size:1.7rem;font-weight:800;color:#1E293B">{val}</div>
-    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:#94A3B8;margin-top:2px">{lbl}</div>
+    <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:#000000;font-weight:700;margin-top:2px">{lbl}</div>
     </div>""", unsafe_allow_html=True)
 
 # Note about currency mapping
 unmapped_count = int((be_geo["country"] == "Unmapped").sum())
 st.markdown(f"""
 <div style="background:rgba(5,150,105,0.06);border-left:3px solid #059669;
-border-radius:0 8px 8px 0;padding:0.7rem 1rem;margin:0.5rem 0 1rem 0;font-size:0.82rem;color:#475569">
-<b style="color:#475569">ℹ️ About the data:</b>
+border-radius:0 8px 8px 0;padding:0.7rem 1rem;margin:0.5rem 0 1rem 0;font-size:0.82rem;color:#1E293B">
+<b style="color:#1E293B">ℹ️ About the data:</b>
 Only <b>completed (NFT-minted) bills</b> are shown. {n_countries} countries/regions detected from {n_currencies} currencies.
 {f'{unmapped_count:,} bills have no currency information and are grouped as <b>"Unmapped"</b>.' if unmapped_count > 0 else ''}
 <b>Currency totals cannot be summed in a single dollar figure</b> since they represent different local currencies.
@@ -129,8 +129,8 @@ with map_col:
         height=480,
         margin=dict(l=0,r=0,t=50,b=0),
         coloraxis_colorbar=dict(
-            title=map_metric, tickfont=dict(color="#475569"),
-            title_font=dict(color="#475569"),
+            title=map_metric, tickfont=dict(color="#1E293B"),
+            title_font=dict(color="#1E293B"),
         ),
     )
     st.plotly_chart(fig_map, width='stretch')
@@ -198,7 +198,7 @@ with detail_col:
             st.markdown("**Top Categories:**")
             for cat, cnt in cat_counts.items():
                 pct = cnt / country_total_bills * 100
-                st.markdown(f"<div style='font-size:0.82rem;color:#475569;padding:2px 0'>"
+                st.markdown(f"<div style='font-size:0.82rem;color:#1E293B;padding:2px 0'>"
                            f"<b style='color:#1E293B'>{cat}</b> — {cnt:,} ({pct:.1f}%)</div>",
                            unsafe_allow_html=True)
 
@@ -223,7 +223,7 @@ with ch1:
         paper_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#334155"), title_font=dict(color="#1E293B", size=15),
         height=450, margin=dict(l=10, r=10, t=80, b=20),
-        legend=dict(font=dict(size=10, color="#475569"), bgcolor="rgba(0,0,0,0)"),
+        legend=dict(font=dict(size=10, color="#1E293B"), bgcolor="rgba(0,0,0,0)"),
     )
     st.plotly_chart(fig, width='stretch')
 

@@ -140,7 +140,22 @@ def load_all() -> dict[str, pd.DataFrame]:
             completed_bill_ids = set(dfs["bill"][dfs["bill"]["status"] == "completed"]["id"])
             be = be[be["billId"].isin(completed_bill_ids)].copy()
 
+        # Remove outlier bills: exclude any bill where USD-converted amount > $1M
+        # (catches bad OCR extractions like the $5B Streamrp bill)
+        _usd_amounts = be.apply(
+            lambda r: r["totalAmount"] * CURRENCY_TO_USD.get(r.get("currency", ""), 0)
+            if pd.notna(r["totalAmount"]) else 0, axis=1
+        )
+        _outlier_mask = _usd_amounts <= 1_000_000
+        _outlier_bill_ids = set(be[~_outlier_mask]["billId"])
+        be = be[_outlier_mask].copy()
+
+        # Also remove outlier bills from the bill table so counts stay consistent
+        if _outlier_bill_ids and "bill" in dfs:
+            dfs["bill"] = dfs["bill"][~dfs["bill"]["id"].isin(_outlier_bill_ids)].copy()
+
         dfs["bill_extraction"] = be
+        dfs["_outlier_bill_ids"] = _outlier_bill_ids  # pass to NFT filter below
 
     # ---- user ----
     if "user" in dfs:
@@ -175,6 +190,10 @@ def load_all() -> dict[str, pd.DataFrame]:
     if "nft" in dfs:
         nf = dfs["nft"]
         nf["createdAt"] = pd.to_datetime(nf["createdAt"], errors="coerce", utc=True).dt.tz_convert(None)
+        # Remove NFTs linked to outlier bills
+        _out_ids = dfs.pop("_outlier_bill_ids", set())
+        if _out_ids and "billId" in nf.columns:
+            nf = nf[~nf["billId"].isin(_out_ids)].copy()
         dfs["nft"] = nf
 
     return dfs

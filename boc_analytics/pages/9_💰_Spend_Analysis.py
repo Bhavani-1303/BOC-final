@@ -272,153 +272,95 @@ else:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ── Spending Heatmaps ────────────────────────────────────────────────────────
-st.markdown("### 🗓️ Spending Heatmaps")
-st.info("📊 **Activity Patterns** — These heatmaps reveal when and where spending happens most. "
-        "Darker cells indicate higher activity. Hover over any cell for exact values.")
+st.markdown("### 🌍 Country × Category Spend Heatmap")
+st.info("📊 **Geographic Spend Patterns** — This heatmap shows how spending is distributed "
+        "across countries and categories. Darker cells indicate higher spend. Hover over any cell for exact USD values.")
 
 import numpy as np
 
-# Prepare heatmap data
-heat_df = opt_df.dropna(subset=["createdAt", "totalAmount"]).copy()
-heat_df["createdAt"] = pd.to_datetime(heat_df["createdAt"], errors="coerce")
-heat_df = heat_df.dropna(subset=["createdAt"])
-heat_df["day_of_week"] = heat_df["createdAt"].dt.day_name()
-heat_df["hour"] = heat_df["createdAt"].dt.hour
-heat_df["usd_amount"] = heat_df.apply(
-    lambda r: r["totalAmount"] * CURRENCY_TO_USD.get(r.get("currency", ""), 0), axis=1
+
+# ── Heatmap 2: Country × Category — Spend (USD) ──────────────────────────────
+from data_loader import CURRENCY_COUNTRY
+
+# Use ALL bill_extraction data (not currency-filtered) for country heatmap
+be_all = dfs.get("bill_extraction", pd.DataFrame()).copy()
+be_all = be_all.dropna(subset=["totalAmount", "currency", "category"])
+be_all = be_all[be_all["totalAmount"] > 0]
+be_all["country"] = be_all["currency"].map(CURRENCY_COUNTRY).fillna("Other")
+be_all["usd_amount"] = be_all.apply(
+    lambda r: r["totalAmount"] * CURRENCY_TO_USD.get(r["currency"], 0), axis=1
 )
 
-day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-day_short = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+# Get top 12 countries by total USD spend
+country_totals = be_all.groupby("country")["usd_amount"].sum().sort_values(ascending=False)
+top_countries = country_totals.head(12).index.tolist()
 
-# ── Heatmap 1: Bill Activity — Day × Hour (full width, annotated) ────────────
-pivot_count = heat_df.groupby(["day_of_week", "hour"]).size().reset_index(name="bill_count")
-pivot_table = pivot_count.pivot(index="day_of_week", columns="hour", values="bill_count").fillna(0)
-pivot_table = pivot_table.reindex(day_order).fillna(0)
-# Ensure all 24 hours
-for h in range(24):
-    if h not in pivot_table.columns:
-        pivot_table[h] = 0
-pivot_table = pivot_table[sorted(pivot_table.columns)]
+# Get top categories
+cat_totals = be_all.groupby("category")["usd_amount"].sum().sort_values(ascending=False)
+top_cats = cat_totals.index.tolist()
 
-z_vals = pivot_table.values.astype(int)
-x_labels = [f"{h}:00" for h in range(24)]
-y_labels = day_short
+# Build pivot
+cc_df = be_all[be_all["country"].isin(top_countries)]
+cc_agg = cc_df.groupby(["country", "category"])["usd_amount"].sum().reset_index()
+pivot_cc = cc_agg.pivot(index="country", columns="category", values="usd_amount").fillna(0)
+pivot_cc = pivot_cc.reindex(columns=top_cats).fillna(0)
+pivot_cc["_total"] = pivot_cc.sum(axis=1)
+pivot_cc = pivot_cc.sort_values("_total", ascending=False).drop(columns=["_total"])
 
-# Create annotation text
-annotations = []
-for i in range(len(y_labels)):
-    for j in range(len(x_labels)):
-        val = int(z_vals[i][j])
-        # Choose text color based on intensity
-        max_val = z_vals.max()
-        text_color = "#FFFFFF" if val > max_val * 0.5 else "#1E293B"
-        annotations.append(dict(
-            x=x_labels[j], y=y_labels[i],
-            text=str(val) if val > 0 else "",
-            font=dict(size=9, color=text_color, family="Inter"),
-            showarrow=False, xref="x", yref="y",
-        ))
+z_cc = pivot_cc.values
 
-fig_hm1 = go.Figure(data=go.Heatmap(
-    z=z_vals,
-    x=x_labels,
-    y=y_labels,
-    colorscale=[
-        [0, "#EEF2FF"],
-        [0.15, "#C7D2FE"],
-        [0.3, "#A5B4FC"],
-        [0.5, "#818CF8"],
-        [0.7, "#6366F1"],
-        [0.85, "#4F46E5"],
-        [1, "#3730A3"],
-    ],
-    xgap=3, ygap=3,
-    hovertemplate="<b>%{y}</b> at <b>%{x}</b><br>Bills: %{z:,}<extra></extra>",
-    showscale=True,
-    colorbar=dict(
-        title=dict(text="Bills", font=dict(size=11, color="#64748B")),
-        tickfont=dict(size=10, color="#64748B"),
-        thickness=14, len=0.9,
-        outlinewidth=0,
-    ),
-))
-fig_hm1.update_layout(
-    title=dict(text="🕐 Bill Submission Activity — Day × Hour", font=dict(size=16, color="#1E293B")),
-    annotations=annotations,
-    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(color="#334155", family="Inter"),
-    height=340, margin=dict(l=10, r=10, t=50, b=40),
-    xaxis=dict(
-        title="Hour of Day", tickfont=dict(size=10, color="#64748B"),
-        side="bottom", dtick=1,
-    ),
-    yaxis=dict(
-        title="", tickfont=dict(size=12, color="#1E293B", weight=600),
-        autorange="reversed",
-    ),
-)
-st.plotly_chart(fig_hm1, use_container_width=True)
+# Normalize per row
+z_cc_norm = np.zeros_like(z_cc)
+for i in range(z_cc.shape[0]):
+    row_max = z_cc[i].max()
+    z_cc_norm[i] = z_cc[i] / row_max if row_max > 0 else 0
 
-st.markdown("<br>", unsafe_allow_html=True)
-
-# ── Heatmap 2: Category × Day — Spend (USD) with annotations ─────────────────
-cat_day = heat_df.dropna(subset=["category"]).groupby(["category", "day_of_week"])["usd_amount"].sum().reset_index()
-pivot_cat = cat_day.pivot(index="category", columns="day_of_week", values="usd_amount").fillna(0)
-pivot_cat = pivot_cat.reindex(columns=day_order).fillna(0)
-pivot_cat["_total"] = pivot_cat.sum(axis=1)
-pivot_cat = pivot_cat.sort_values("_total", ascending=False).drop(columns=["_total"])
-
-z_cat = pivot_cat.values
-# Normalize per row for better color distribution
-z_norm = np.zeros_like(z_cat)
-for i in range(z_cat.shape[0]):
-    row_max = z_cat[i].max()
-    z_norm[i] = z_cat[i] / row_max if row_max > 0 else 0
-
-# Annotations with dollar values
-cat_annotations = []
-for i, cat in enumerate(pivot_cat.index):
-    for j, day in enumerate(day_short):
-        val = z_cat[i][j]
-        intensity = z_norm[i][j]
+# Annotations
+cc_annotations = []
+for i, country in enumerate(pivot_cc.index):
+    for j, cat in enumerate(pivot_cc.columns):
+        val = z_cc[i][j]
+        intensity = z_cc_norm[i][j]
         text_color = "#FFFFFF" if intensity > 0.55 else "#334155"
-        if val >= 1000:
+        if val >= 1_000_000:
+            txt = f"${val/1_000_000:.1f}M"
+        elif val >= 1000:
             txt = f"${val/1000:.1f}k"
         elif val > 0:
             txt = f"${val:.0f}"
         else:
             txt = ""
-        cat_annotations.append(dict(
-            x=day, y=cat, text=txt,
-            font=dict(size=10, color=text_color, family="Inter"),
+        cc_annotations.append(dict(
+            x=cat, y=country, text=txt,
+            font=dict(size=9, color=text_color, family="Inter"),
             showarrow=False, xref="x", yref="y",
         ))
 
-fig_hm2 = go.Figure(data=go.Heatmap(
-    z=z_norm,
-    x=day_short,
-    y=list(pivot_cat.index),
-    customdata=z_cat,
+fig_cc = go.Figure(data=go.Heatmap(
+    z=z_cc_norm,
+    x=list(pivot_cc.columns),
+    y=list(pivot_cc.index),
+    customdata=z_cc,
     colorscale=[
-        [0, "#ECFDF5"],
-        [0.2, "#A7F3D0"],
-        [0.4, "#6EE7B7"],
-        [0.6, "#34D399"],
-        [0.8, "#059669"],
-        [1, "#064E3B"],
+        [0, "#EFF6FF"],
+        [0.2, "#BFDBFE"],
+        [0.4, "#60A5FA"],
+        [0.6, "#3B82F6"],
+        [0.8, "#1D4ED8"],
+        [1, "#1E3A5F"],
     ],
     xgap=4, ygap=4,
-    hovertemplate="<b>%{y}</b> on <b>%{x}</b><br>Spend: $%{customdata:,.0f}<extra></extra>",
+    hovertemplate="<b>%{y}</b> — <b>%{x}</b><br>Spend: $%{customdata:,.0f}<extra></extra>",
     showscale=False,
 ))
-fig_hm2.update_layout(
-    title=dict(text="📦 Category × Day of Week Spend (USD)", font=dict(size=16, color="#1E293B")),
-    annotations=cat_annotations,
+fig_cc.update_layout(
+    title=dict(text="🌍 Country × Category Spend (USD)", font=dict(size=16, color="#1E293B")),
+    annotations=cc_annotations,
     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
     font=dict(color="#334155", family="Inter"),
-    height=450, margin=dict(l=10, r=10, t=50, b=10),
-    xaxis=dict(tickfont=dict(size=13, color="#1E293B", weight=600), side="bottom"),
-    yaxis=dict(tickfont=dict(size=12, color="#1E293B"), autorange="reversed"),
+    height=500, margin=dict(l=10, r=10, t=50, b=10),
+    xaxis=dict(tickfont=dict(size=11, color="#1E293B", weight=600), side="bottom", tickangle=-30),
+    yaxis=dict(tickfont=dict(size=12, color="#1E293B", weight=600), autorange="reversed"),
 )
-st.plotly_chart(fig_hm2, use_container_width=True)
+st.plotly_chart(fig_cc, use_container_width=True)
+

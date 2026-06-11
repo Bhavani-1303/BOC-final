@@ -375,17 +375,25 @@ if "referredBy" in user.columns:
     ref_counts.columns = ["Referral Code", "Times Used"]
     ref_counts = ref_counts.sort_values("Times Used", ascending=True)
 
+    # Verify referral codes match actual users
+    ref_codes_set = set(user["referralCode"].dropna().unique()) if "referralCode" in user.columns else set()
+    referred_by_set = set(user["referredBy"].dropna().unique())
+    matched_codes = referred_by_set.intersection(ref_codes_set)
+    unmatched_codes = referred_by_set - ref_codes_set
+
     fig_ref = go.Figure(go.Bar(
         y=ref_counts["Referral Code"],
         x=ref_counts["Times Used"],
         orientation="h",
         marker=dict(
-            color="#F59E0B",
+            color=ref_counts["Times Used"],
+            colorscale=[[0, "#B0BEC5"], [0.3, "#78909C"], [0.6, "#546E7A"], [1, "#37474F"]],
+            showscale=False,
             line=dict(width=0),
         ),
-        text=ref_counts["Times Used"],
+        text=ref_counts["Times Used"].apply(lambda v: f"{v:,}"),
         textposition="outside",
-        textfont=dict(size=11, color="#334155"),
+        textfont=dict(size=11, color="#334155", weight=600),
     ))
     fig_ref.update_layout(
         title="🏅 Top 15 Referral Codes Used",
@@ -393,13 +401,34 @@ if "referredBy" in user.columns:
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#334155", family="Inter"),
         title_font=dict(color="#1E293B", size=15),
-        height=450,
-        margin=dict(l=10, r=60, t=55, b=30),
+        height=520,
+        margin=dict(l=10, r=70, t=55, b=30),
         xaxis=dict(title="Times Used", gridcolor="rgba(0,0,0,0.06)"),
-        yaxis=dict(title="", gridcolor="rgba(0,0,0,0)"),
+        yaxis=dict(title="", gridcolor="rgba(0,0,0,0)",
+                   tickfont=dict(size=12, color="#1E293B", weight=600, family="monospace"),
+                   automargin=True),
         showlegend=False,
     )
-    st.plotly_chart(fig_ref, width='stretch')
+    st.plotly_chart(fig_ref, use_container_width=True)
+
+    # Verification note
+    if len(unmatched_codes) == 0:
+        st.markdown(f"""
+        <div style="background:#ECFDF5;border-left:4px solid #059669;border-radius:0 8px 8px 0;
+        padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.85rem;color:#1E293B;">
+        <b style="color:#059669">✅ Data Verified:</b> All <b>{len(matched_codes)}</b> referral codes match existing user accounts.
+        <b>{referred:,}</b> users ({ref_rate:.1f}% of total) were referred by another user.
+        Top referrer <b>{ref_counts.iloc[-1]["Referral Code"]}</b> brought in <b>{ref_counts.iloc[-1]["Times Used"]:,}</b> users.
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div style="background:#FEF3C7;border-left:4px solid #D97706;border-radius:0 8px 8px 0;
+        padding:0.8rem 1rem;margin:0.5rem 0;font-size:0.85rem;color:#1E293B;">
+        <b style="color:#D97706">⚠️ Note:</b> {len(unmatched_codes)} referral codes don't match any existing user's referral code.
+        These may be from deleted accounts or external campaigns.
+        </div>
+        """, unsafe_allow_html=True)
 else:
     st.info("No referral data available.")
 

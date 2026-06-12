@@ -102,36 +102,87 @@ map_source = curr_agg
 
 # ── World Choropleth Map + Country Detail Panel ────────────────────────────────
 map_df = map_source.dropna(subset=["iso3"])
+
 map_metric = st.radio("Map metric:", ["Bill Count","Total Spend","Avg Spend","Unique Merchants"],
                        horizontal=True)
+
 metric_col = {"Bill Count":"bill_count","Total Spend":"total_spend",
               "Avg Spend":"avg_spend","Unique Merchants":"unique_merchants"}[map_metric]
 
 map_col, detail_col = st.columns([3, 1])
 
 with map_col:
-    fig_map = px.choropleth(
-        map_df, locations="iso3", color=metric_col,
-        hover_name="country",
-        hover_data={"currency":True,"bill_count":True,"total_spend":":.0f","avg_spend":":.1f"},
-        color_continuous_scale=["#F0FDF4","#34D399","#0891B2"],
-        title=f"🗺️ World Map — {map_metric} by Country",
-        projection="natural earth",
-    )
-    fig_map.update_layout(
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FFFFFF",
-        geo=dict(bgcolor="#FFFFFF", lakecolor="#EFF6FF",
-                 landcolor="#F1F5F9", coastlinecolor="#CBD5E1",
-                 showframe=False, showcoastlines=True),
-        font=dict(color="#334155"),
-        title_font=dict(color="#1E293B", size=16),
-        height=480,
-        margin=dict(l=0,r=0,t=50,b=0),
-        coloraxis_colorbar=dict(
+    # ── World map ──────────────────────────────────────────────────────
+    # Apply log1p transform so low-count countries (like India) are still
+    # clearly distinguishable from empty land on the color scale.
+    world_df = map_df.copy()
+    world_df["_color_val"] = np.log1p(world_df[metric_col])
+
+    # Get India's color value for the base fill layer
+    india_world = world_df[world_df["iso3"] == "IND"]
+    india_color_val = float(india_world["_color_val"].iloc[0]) if not india_world.empty else 0
+
+    fig_map = go.Figure()
+
+    # Layer 1: India base fill using Plotly built-in IND boundary
+    # This ensures the FULL claimed territory (J&K, PoK, Aksai Chin) is filled
+    if india_color_val > 0:
+        _cmin = float(world_df["_color_val"].min()) if not world_df.empty else 0
+        _cmax = float(world_df["_color_val"].max()) if not world_df.empty else 1
+        fig_map.add_trace(go.Choropleth(
+            locations=["IND"],
+            z=[india_color_val],
+            zmin=_cmin,
+            zmax=_cmax,
+            colorscale=["#6EE7B7","#34D399","#059669","#0891B2","#1E3A5F"],
+            showscale=False,
+            hoverinfo="skip",
+            marker_line_color="#1E293B",
+            marker_line_width=1.5,
+        ))
+
+    # Layer 2: All countries choropleth on top
+    fig_map.add_trace(go.Choropleth(
+        locations=world_df["iso3"],
+        z=world_df["_color_val"],
+        text=world_df["country"],
+        customdata=np.column_stack([
+            world_df["country"], world_df["currency"],
+            world_df["bill_count"], world_df["total_spend"].apply(lambda x: f"{x:,.0f}"),
+            world_df["avg_spend"].apply(lambda x: f"{x:,.1f}"),
+        ]),
+        hovertemplate=(
+            "<b>%{text}</b><br>"
+            "Currency: %{customdata[1]}<br>"
+            "Bill Count: %{customdata[2]}<br>"
+            "Total Spend: %{customdata[3]}<br>"
+            "Avg Spend: %{customdata[4]}<extra></extra>"
+        ),
+        colorscale=["#6EE7B7","#34D399","#059669","#0891B2","#1E3A5F"],
+        colorbar=dict(
             title=map_metric, tickfont=dict(color="#1E293B"),
             title_font=dict(color="#1E293B"),
         ),
+        marker_line_color="#1E293B",
+        marker_line_width=1.5,
+    ))
+
+    fig_map.update_layout(
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        title=dict(text=f"🗺️ World Map — {map_metric} by Country",
+                   font=dict(color="#1E293B", size=16)),
+        geo=dict(
+            bgcolor="#FFFFFF", lakecolor="#DBEAFE", landcolor="#F8FAFC",
+            coastlinecolor="#CBD5E1", countrycolor="#CBD5E1",
+            showframe=False, showcoastlines=True, showcountries=True,
+            countrywidth=0.5, coastlinewidth=0.5,
+            projection_type="natural earth",
+            resolution=50,
+        ),
+        font=dict(color="#334155"),
+        height=500,
+        margin=dict(l=0,r=0,t=50,b=0),
     )
     st.plotly_chart(fig_map, width='stretch')
 
